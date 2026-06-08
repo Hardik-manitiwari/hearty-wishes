@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Celebration Countdown</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Default: Anniversary Theme */
+            --primary: #ff6b9d;
+            --primary-dark: #ff4b82;
+            --bg-gradient: linear-gradient(135deg, #fce4ec 0%, #ffe0b2 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #2d3436;
+            --accent: #f06292;
+            --btn-shadow: rgba(255, 107, 157, 0.4);
+        }
+
+        [data-theme="birthday"] {
+            --primary: #4834d4;
+            --primary-dark: #3c2bb3;
+            --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            --accent: #ff9f43;
+            --btn-shadow: rgba(72, 52, 212, 0.4);
+        }
+
+        [data-theme="wedding"] {
+            --primary: #634d3d;
+            --primary-dark: #4d3a2e;
+            --bg-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+            --accent: #d4a373;
+            --btn-shadow: rgba(99, 77, 61, 0.4);
+        }
+
+        [data-theme="valentine"] {
+            --primary: #d63031;
+            --primary-dark: #b71c1c;
+            --bg-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            --accent: #e17055;
+            --btn-shadow: rgba(214, 48, 49, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            color: var(--text-color);
+            transition: all 0.8s ease;
+        }
+
+        .wrap { width: 100%; max-width: 950px; padding: 20px; z-index: 10; position: relative; }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 40px;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Settings System */
+        .settings-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .settings-toggle:hover { transform: rotate(90deg) scale(1.1); background: white; }
+
+        .settings-panel {
+            /* make the panel fixed to viewport so it isn't clipped by the card */
+            position: fixed;
+            top: 72px;
+            right: 20px;
+            width: 320px;
+            max-height: calc(100vh - 96px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: white;
+            padding: 20px 18px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+            z-index: 9999;
+            display: none;
+            animation: slideDown 0.28s ease-out;
+        }
+        .settings-panel.active { display: block; }
+        .settings-panel h3 { font-size: 1.1rem; margin-bottom: 15px; font-weight: 600; }
+        .settings-panel label { font-size: 0.8rem; color: #666; display: block; margin: 12px 0 5px; font-weight: 600; }
+        .settings-panel input, .settings-panel select {
+            width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 12px; font-family: inherit; outline: none; background: #fafafa;
+        }
+
+        /* Left Section: Photo & Quote */
+        .left { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+
+        .photo-frame {
+            width: 100%; aspect-ratio: 1; background: #fff; padding: 12px; border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; transform: rotate(-3deg);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
+        }
+        .photo-frame:hover { transform: rotate(0deg) scale(1.03); }
+        .photo-frame img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; }
+
+        .balloon {
+            position: absolute; width: 60px; height: 75px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            z-index: 1; animation: float 6s ease-in-out infinite; box-shadow: inset -6px -6px 10px rgba(0,0,0,0.1);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50% { transform: translateY(-20px) rotate(4deg); }
+        }
+
+        .quote {
+            margin-top: 30px; font-family: 'Dancing Script', cursive; font-size: 1.6rem;
+            color: var(--primary); text-align: center; line-height: 1.4; transition: color 0.3s;
+        }
+
+        /* Right Section: Countdown & UI */
+        .right { display: flex; flex-direction: column; justify-content: center; }
+
+        h1 {
+            font-size: 2.4rem; margin-bottom: 10px; line-height: 1.2;
+            color: var(--primary); transition: color 0.3s; font-weight: 700;
+        }
+
+        .sub { font-size: 0.95rem; color: #636e72; margin-bottom: 30px; }
+
+        .countdown { display: flex; gap: 12px; margin-bottom: 35px; }
+        .unit {
+            flex: 1; background: white; padding: 18px 5px; border-radius: 20px;
+            text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.01);
+        }
+        .unit .num { display: block; font-size: 1.8rem; font-weight: 700; color: var(--primary); transition: color 0.3s; }
+        .unit .label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #b2bec3; font-weight: 600; }
+
+        .cake {
+            width: 140px; height: 50px; background: var(--accent); border-radius: 12px 12px 0 0;
+            position: relative; margin: 20px auto 35px; opacity: 0.95; transition: background 0.3s;
+        }
+        .cake::before { content: ''; position: absolute; top: -15px; left: 10%; width: 80%; height: 15px; background: var(--primary); border-radius: 10px 10px 0 0; transition: background 0.3s; }
+        .candle { width: 7px; height: 25px; background: #ffd54f; position: absolute; top: -40px; left: 50%; transform: translateX(-50%); }
+        .flame {
+            width: 12px; height: 18px; background: #ff9800; border-radius: 50% 50% 20% 20%;
+            position: absolute; top: -18px; left: -2px; animation: flicker 0.15s infinite alternate; box-shadow: 0 0 12px #ff9800;
+        }
+
+        .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+        .btn {
+            padding: 12px 24px; border-radius: 14px; border: none; cursor: pointer;
+            font-weight: 600; font-family: inherit; transition: 0.3s;
+            background: var(--primary); color: white; box-shadow: 0 8px 20px var(--btn-shadow);
+        }
+        .btn-secondary { background: rgba(0,0,0,0.05); color: var(--text-color); box-shadow: none; }
+        .btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
+        .btn:active { transform: translateY(-1px); }
+
+        @keyframes flicker { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+
+        #confetti { position: fixed; left: 0; top: 0; pointer-events: none; width: 100%; height: 100%; z-index: 50; }
+
+        @media (max-width: 900px) {
+            .card { grid-template-columns: 1fr; padding: 30px; }
+            .left { order: 2; margin-top: 20px; }
+            .right { order: 1; text-align: center; }
+            .countdown { justify-content: center; }
+            .controls { justify-content: center; }
+            h1 { font-size: 2.2rem; }
+            .photo-frame { max-width: 400px; margin: 0 auto; }
+        }
+
+        /* Settings thumbnails & previews */
+        .thumbs { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+        .thumb { width:64px; height:64px; border-radius:8px; overflow:hidden; position:relative; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+        .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .thumb button { position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:6px; padding:2px 6px; cursor:pointer; font-size:12px; }
+        .song-preview { display:flex; gap:8px; align-items:center; margin-top:8px; }
+        .song-preview span { font-size:0.85rem; color:#444; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .small-btn { padding:6px 10px; border-radius:10px; font-size:0.85rem; }
+    </style>
+</head>
+<body>
+    <canvas id="confetti"></canvas>
+    
+    <div class="wrap">
+        <div class="card" id="mainCard">
+            <div class="settings-toggle" id="settingsToggle">⚙️</div>
+            
+            <div class="settings-panel" id="settingsPanel">
+                <h3>Celebration Settings</h3>
+                <label>Event Title</label>
+                <input type="text" id="titleInput" placeholder="Happy Anniversary, Mummy Papa!">
+                
+                <label>Theme & Occasion</label>
+                <select id="themeSelect">
+                    <option value="anniversary">Anniversary Mode</option>
+                    <option value="birthday">Birthday Mode</option>
+                    <option value="wedding">Wedding Mode</option>
+                    <option value="valentine">Love / Valentine Mode</option>
+                </select>
+
+                <label>Target Date & Time</label>
+                <input type="datetime-local" id="dateInput">
+
+                <label>Add Custom Photo URL</label>
+                <input type="text" id="photoInput" placeholder="https://example.com/photo.jpg">
+
+                <label>Or upload up to 4 JPG files</label>
+                <input type="file" id="photoFilesInput" accept="image/jpeg" multiple>
+                <button class="btn" style="width:100%; margin-top: 10px;" id="uploadPhotosBtn">Upload Photos</button>
+                <div class="thumbs" id="photoThumbs"></div>
+                <button class="btn btn-secondary" style="width:100%; margin-top:8px;" id="clearUploadsBtn">Clear Uploaded Photos</button>
+
+                <label style="margin-top:8px;">Add Custom Song URL</label>
+                <input type="text" id="songInput" placeholder="https://example.com/song.mp3">
+
+                <label>Or upload one MP3 file</label>
+                <input type="file" id="songFileInput" accept="audio/mpeg">
+                <button class="btn" style="width:100%; margin-top: 10px;" id="uploadSongBtn">Upload Song</button>
+                <div class="song-preview" id="songPreview">
+                    <span id="songName">No song selected</span>
+                    <button class="btn small-btn" id="previewSongBtn">Preview</button>
+                    <audio id="previewAudio" style="display:none"></audio>
+                </div>
+
+                <button class="btn" style="width:100%; margin-top: 12px;" id="addPhotoBtn">Add Photo (URL)</button>
+                <button class="btn" style="width:100%; margin-top: 8px;" id="addSongBtn">Add Song (URL)</button>
+                <button class="btn" style="width:100%; margin-top: 12px;" id="saveBtn">Save Settings</button>
+            </div>
+
+            <div class="left">
+                <!-- Decorative balloons based on primary color -->
+                <div class="balloon" style="top:-60px; left:10px; background:#ff9a9e;"></div>
+                <div class="balloon" style="top:-40px; right:10px; background:#a8edea; width:50px; height:65px; animation-delay:1s;"></div>
+                
+                <div class="photo-frame">
+                    <img id="portrait" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80" alt="Special Moment"/>
+                </div>
+                <div class="quote" id="quote">"Wishing you a lifetime of love and happiness!"</div>
+            </div>
+
+            <div class="right">
+                <h1 id="titleDisplay">Loading...</h1>
+                <div class="sub" id="subDisplay">Counting down to your special celebration. ❤️</div>
+
+                <div class="countdown">
+                    <div class="unit"><span class="num" id="days">0</span><span class="label">Days</span></div>
+                    <div class="unit"><span class="num" id="hours">00</span><span class="label">Hours</span></div>
+                    <div class="unit"><span class="num" id="mins">00</span><span class="label">Mins</span></div>
+                    <div class="unit"><span class="num" id="secs">00</span><span class="label">Secs</span></div>
+                </div>
+
+                <div class="cake">
+                    <div class="candle"><div class="flame"></div></div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn" id="playBtn">🎵 Play Music</button>
+                    <button class="btn btn-secondary" id="surpriseBtn">✨ Surprise</button>
+                    <button class="btn btn-secondary" id="muteBtn">🔇 Mute</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Music & Audio -->
+    <audio id="bgm" loop src="audio/bgm.mp3"></audio>
+    <audio id="celebAudio" src="audio/birthday.mp3"></audio>
+
+    <script>
+        // GitHub-Friendly Placeholder Images (Theme-based)
+        const THEME_DATA = {
+            anniversary: {
+                photos: [
+                    'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1518199266791-bd373292e94c?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80'
+                ],
+                quotes: ["Celebrating your beautiful journey 💖", "Another year of togetherness ✨", "True love looks like you two ❤️"]
+            },
+            birthday: {
+                photos: [
+                    'https://images.unsplash.com/photo-1464349153735-7db50ed83c84?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1530103043960-ef38714abb15?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80'
+                ],
+                quotes: ["May your day be full of cake! 🎂", "Celebrating another amazing year! 🎉", "Wishes coming your way! 🎈"]
+            },
+            wedding: {
+                photos: [
+                    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80'
+                ],
+                quotes: ["A match made in heaven ✨", "Two hearts, one soul ❤️", "Forever starts today 🥂"]
+            },
+            valentine: {
+                photos: [
+                    'https://images.unsplash.com/photo-1516589174184-c685266e430c?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1518199266791-bd373292e94c?auto=format&fit=crop&w=800&q=80'
+                ],
+                quotes: ["Love is in the air 💖", "You have my heart ❤️", "Every day is Valentine with you ✨"]
+            }
+        };
+
+        const els = {
+            days: document.getElementById('days'),
+            hours: document.getElementById('hours'),
+            mins: document.getElementById('mins'),
+            secs: document.getElementById('secs'),
+            titleDisplay: document.getElementById('titleDisplay'),
+            portrait: document.getElementById('portrait'),
+            quote: document.getElementById('quote'),
+            settingsPanel: document.getElementById('settingsPanel'),
+            settingsToggle: document.getElementById('settingsToggle'),
+            saveBtn: document.getElementById('saveBtn'),
+            titleInput: document.getElementById('titleInput'),
+            themeSelect: document.getElementById('themeSelect'),
+            dateInput: document.getElementById('dateInput'),
+            photoInput: document.getElementById('photoInput'),
+            photoFilesInput: document.getElementById('photoFilesInput'),
+            uploadPhotosBtn: document.getElementById('uploadPhotosBtn'),
+            photoThumbs: document.getElementById('photoThumbs'),
+            clearUploadsBtn: document.getElementById('clearUploadsBtn'),
+            songInput: document.getElementById('songInput'),
+            songFileInput: document.getElementById('songFileInput'),
+            uploadSongBtn: document.getElementById('uploadSongBtn'),
+            songPreview: document.getElementById('songPreview'),
+            songName: document.getElementById('songName'),
+            previewSongBtn: document.getElementById('previewSongBtn'),
+            previewAudio: document.getElementById('previewAudio'),
+            addPhotoBtn: document.getElementById('addPhotoBtn'),
+            addSongBtn: document.getElementById('addSongBtn'),
+            bgm: document.getElementById('bgm'),
+            celebAudio: document.getElementById('celebAudio'),
+            playBtn: document.getElementById('playBtn'),
+            muteBtn: document.getElementById('muteBtn'),
+            surpriseBtn: document.getElementById('surpriseBtn')
+        };
+
+        // Configuration State
+        let config = JSON.parse(localStorage.getItem('celeb_config_v2')) || {
+            title: "Happy Anniversary, Mummy Papa!",
+            theme: "anniversary",
+            target: new Date(Date.now() + 86400000 * 3).toISOString(), // Default: 3 days from now
+            customPhotos: [],
+            customSong: ""
+        };
+
+        function applyConfig() {
+            document.body.setAttribute('data-theme', config.theme);
+            els.titleDisplay.innerText = config.title;
+            els.titleInput.value = config.title;
+            els.themeSelect.value = config.theme;
+            
+            const d = new Date(config.target);
+            // Convert to local ISO string for datetime-local input
+            els.dateInput.value = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0, 16);
+            
+            // Set initial theme-specific content or custom content
+            const data = THEME_DATA[config.theme];
+            if (config.customPhotos && config.customPhotos.length > 0) {
+                els.portrait.src = config.customPhotos[0];
+            } else {
+                els.portrait.src = data.photos[0];
+            }
+            els.quote.innerText = data.quotes[0];
+            
+            // Load custom song if set
+            if (config.customSong) {
+                els.bgm.src = config.customSong;
+            }
+            
+            // render thumbnails and song preview
+            renderPhotoThumbs();
+            updateSongPreview();
+
+            updateCountdown();
+        }
+
+        function updateCountdown() {
+            const now = new Date();
+            const target = new Date(config.target);
+            const diff = target - now;
+
+            if (diff <= 0) {
+                els.days.innerText = "0";
+                els.hours.innerText = "00";
+                els.mins.innerText = "00";
+                els.secs.innerText = "00";
+                triggerCelebration();
+                return;
+            }
+
+            els.days.innerText = Math.floor(diff / 86400000);
+            els.hours.innerText = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+            els.mins.innerText = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+            els.secs.innerText = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        }
+
+        // Method to add custom photo
+        function addCustomPhoto() {
+            const photoUrl = els.photoInput.value.trim();
+            if (photoUrl) {
+                if (!config.customPhotos) config.customPhotos = [];
+                config.customPhotos.push(photoUrl);
+                els.photoInput.value = '';
+                els.portrait.src = photoUrl;
+                alert('Photo added successfully! ✨');
+            } else {
+                alert('Please enter a valid photo URL');
+            }
+        }
+
+        // Method to add custom song
+        function addCustomSong() {
+            const songUrl = els.songInput.value.trim();
+            if (songUrl) {
+                config.customSong = songUrl;
+                els.bgm.src = songUrl;
+                els.songInput.value = '';
+                alert('Song added successfully! 🎵');
+            } else {
+                alert('Please enter a valid song URL');
+            }
+        }
+
+        // Process uploaded photo files (up to 4 JPGs)
+        function processPhotoFilesUpload() {
+            const files = els.photoFilesInput.files;
+            if (!files || files.length === 0) { alert('Please select one or more JPG files (up to 4).'); return; }
+            const list = Array.from(files).slice(0, 4);
+            const readers = list.map(file => new Promise((res, rej) => {
+                const fr = new FileReader();
+                fr.onload = () => res(fr.result);
+                fr.onerror = () => rej(new Error('File read error'));
+                fr.readAsDataURL(file);
+            }));
+
+            Promise.all(readers).then(dataUrls => {
+                if (!config.customPhotos) config.customPhotos = [];
+                // Merge and keep most recent up to 4
+                config.customPhotos = config.customPhotos.concat(dataUrls).slice(0, 4);
+                // store names (use generic names if not present)
+                if (!config.customPhotoNames) config.customPhotoNames = [];
+                const names = list.map(f => f.name || ('photo' + Date.now()));
+                config.customPhotoNames = config.customPhotoNames.concat(names).slice(0, 4);
+                els.portrait.src = config.customPhotos[0];
+                localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+                els.photoFilesInput.value = '';
+                renderPhotoThumbs();
+                alert('Photos uploaded and saved!');
+            }).catch(() => alert('Failed to read one or more photo files.'));
+        }
+
+        // Process uploaded song file (single MP3)
+        function processSongFileUpload() {
+            const file = els.songFileInput.files && els.songFileInput.files[0];
+            if (!file) { alert('Please select an MP3 file to upload.'); return; }
+            const fr = new FileReader();
+            fr.onload = () => {
+                config.customSong = fr.result;
+                config.customSongName = file.name || 'custom_song.mp3';
+                els.bgm.src = fr.result;
+                localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+                els.songFileInput.value = '';
+                updateSongPreview();
+                alert('Song uploaded and saved!');
+            };
+            fr.onerror = () => alert('Failed to read the song file.');
+            fr.readAsDataURL(file);
+        }
+
+        // Event Handlers
+        els.settingsToggle.onclick = () => els.settingsPanel.classList.toggle('active');
+        
+        els.addPhotoBtn.onclick = () => {
+            addCustomPhoto();
+            localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+        };
+
+        els.uploadPhotosBtn.onclick = () => {
+            processPhotoFilesUpload();
+        };
+
+        els.addSongBtn.onclick = () => {
+            addCustomSong();
+            localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+        };
+
+        els.uploadSongBtn.onclick = () => {
+            processSongFileUpload();
+        };
+
+        // Thumbnail rendering and management
+        function renderPhotoThumbs() {
+            const thumbs = els.photoThumbs;
+            thumbs.innerHTML = '';
+            const photos = (config.customPhotos && config.customPhotos.length) ? config.customPhotos : [];
+            photos.forEach((dataUrl, i) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'thumb';
+                const img = document.createElement('img'); img.src = dataUrl; wrapper.appendChild(img);
+                const btn = document.createElement('button'); btn.innerText = '✕';
+                btn.title = 'Remove photo';
+                btn.onclick = () => { removePhoto(i); };
+                wrapper.appendChild(btn);
+                thumbs.appendChild(wrapper);
+            });
+        }
+
+        function removePhoto(idx) {
+            if (!config.customPhotos) return;
+            config.customPhotos.splice(idx, 1);
+            if (config.customPhotoNames) config.customPhotoNames.splice(idx, 1);
+            localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+            renderPhotoThumbs();
+            els.portrait.src = (config.customPhotos && config.customPhotos[0]) || THEME_DATA[config.theme].photos[0];
+        }
+
+        function clearUploads() {
+            config.customPhotos = [];
+            config.customPhotoNames = [];
+            config.customSong = '';
+            config.customSongName = '';
+            els.bgm.src = 'audio/bgm.mp3';
+            localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+            renderPhotoThumbs();
+            updateSongPreview();
+            alert('Cleared uploaded photos and song.');
+        }
+
+        function updateSongPreview() {
+            if (config.customSong) {
+                els.songName.innerText = config.customSongName || 'Custom Song';
+                els.previewAudio.src = config.customSong;
+            } else {
+                els.songName.innerText = 'No song selected';
+                els.previewAudio.src = '';
+            }
+        }
+
+        els.clearUploadsBtn.onclick = clearUploads;
+        els.previewSongBtn.onclick = () => {
+            if (!els.previewAudio.src) { alert('No song to preview'); return; }
+            if (els.previewAudio.paused) { els.previewAudio.play().then(()=> els.previewSongBtn.innerText = 'Pause'); } else { els.previewAudio.pause(); els.previewSongBtn.innerText = 'Preview'; }
+        };
+        
+        els.saveBtn.onclick = () => {
+            config.title = els.titleInput.value || "Special Celebration!";
+            config.theme = els.themeSelect.value;
+            config.target = new Date(els.dateInput.value).toISOString();
+            localStorage.setItem('celeb_config_v2', JSON.stringify(config));
+            
+            applyConfig();
+            els.settingsPanel.classList.remove('active');
+            celebrationTriggered = false;
+            burstConfetti(50);
+        };
+
+        els.surpriseBtn.onclick = () => {
+            const data = THEME_DATA[config.theme];
+            let photosToUse = data.photos;
+            if (config.customPhotos && config.customPhotos.length > 0) {
+                photosToUse = config.customPhotos;
+            }
+            els.portrait.src = photosToUse[Math.floor(Math.random() * photosToUse.length)];
+            els.quote.innerText = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+            burstConfetti(60);
+        };
+
+        let muted = false;
+        els.playBtn.onclick = () => {
+            els.bgm.play().then(() => {
+                els.playBtn.innerText = "🎵 Playing...";
+                els.playBtn.classList.add('btn-secondary');
+            }).catch(() => alert("Interact with the screen first to enable audio."));
+        };
+
+        els.muteBtn.onclick = () => {
+            muted = !muted;
+            els.bgm.muted = muted;
+            els.celebAudio.muted = muted;
+            els.muteBtn.innerText = muted ? "🔊 Unmute" : "🔇 Mute";
+        };
+
+        let celebrationTriggered = false;
+        function triggerCelebration() {
+            if (celebrationTriggered) return;
+            celebrationTriggered = true;
+            els.titleDisplay.innerText = "Time to Celebrate! 🎉✨";
+            els.bgm.pause();
+            els.celebAudio.play().catch(()=>{});
+            burstConfetti(400);
+            
+            // Periodically burst confetti
+            const interval = setInterval(() => {
+                if (!celebrationTriggered) { clearInterval(interval); return; }
+                burstConfetti(30);
+            }, 3500);
+        }
+
+        // Confetti Engine
+        const canvas = document.getElementById('confetti');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.onresize = resize; resize();
+
+        function burstConfetti(n) {
+            for(let i=0; i<n; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width, y: -20,
+                    size: Math.random() * 8 + 4,
+                    color: `hsl(${Math.random() * 360}, 75%, 65%)`,
+                    vx: (Math.random() - 0.5) * 6, vy: Math.random() * 4 + 2,
+                    rot: Math.random() * 360, rs: (Math.random() - 0.5) * 15
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            particles.forEach((p, i) => {
+                p.y += p.vy; p.x += p.vx; p.rot += p.rs;
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+                ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                ctx.restore();
+                if (p.y > canvas.height + 20) particles.splice(i, 1);
+            });
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        applyConfig();
+        setInterval(updateCountdown, 1000);
+        animate();
+    </script>
+</body>
+</html>
